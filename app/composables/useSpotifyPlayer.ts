@@ -25,6 +25,20 @@ function loadSdk(): Promise<void> {
 
 const wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 
+/** Le SDK lit un flux protégé par DRM : sans Widevine, il échoue à l'initialisation. */
+async function hasWidevine(): Promise<boolean> {
+  try {
+    await navigator.requestMediaKeySystemAccess('com.widevine.alpha', [{
+      initDataTypes: ['cenc'],
+      audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"' }],
+    }])
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
 /**
  * Lecteur Web Playback SDK de l'appareil hôte. La lecture d'un morceau est déclenchée côté serveur
  * (PUT /me/player/play sur `deviceId`) : le navigateur ne reçoit jamais la liste des réponses.
@@ -59,7 +73,12 @@ export function useSpotifyPlayer() {
       error.value = null
     })
     player.addListener('not_ready', () => { deviceId.value = null })
-    player.addListener('initialization_error', () => { error.value = 'Ce navigateur ne permet pas la lecture Spotify. Utilise Chrome, Edge ou Firefox sur ordinateur.' })
+    player.addListener('initialization_error', async ({ message }) => {
+      console.error('[Spotify SDK] initialization_error', message)
+      error.value = await hasWidevine()
+        ? `Le lecteur Spotify n'a pas pu démarrer : ${message}`
+        : 'Ce navigateur ne fournit pas Widevine, le module de lecture protégée exigé par Spotify. Utilise Chrome ou Edge, ou active-le (Firefox : Paramètres > « Lire le contenu protégé par DRM » ; Brave : brave://settings/extensions > Widevine).'
+    })
     player.addListener('authentication_error', () => { error.value = 'Spotify a refusé l\'authentification du lecteur. Reconnecte-toi.' })
     player.addListener('account_error', () => { error.value = 'Un compte Spotify Premium est nécessaire pour la lecture.' })
     player.addListener('playback_error', ({ message }) => { error.value = `Erreur de lecture : ${message}` })
