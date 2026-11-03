@@ -10,10 +10,11 @@ Blind test de salon sur ta propre musique Spotify. Un appareil (ordinateur branc
 
 - [x] Connexion Spotify (OAuth côté serveur, refresh automatique, déconnexion)
 - [x] Liste des playlists de l'utilisateur connecté
-- [ ] Paramétrage de la partie (nombre de manches, durée d'extrait, mode buzzer ou texte)
-- [ ] Lecture via le Web Playback SDK
-- [ ] Buzzers sur téléphone (QR code, WebSocket local)
-- [ ] Écran de résultats
+- [x] Paramétrage de la partie (nombre de manches, durée d'extrait)
+- [x] Lecture via le Web Playback SDK, extrait aléatoire entre 20 % et 70 % du morceau
+- [x] Partie solo sur l'écran principal : réponse tolérante, 1 point artiste + 1 point titre, révélation
+- [x] Écran de résultats
+- [ ] Téléphones des joueurs (QR code, WebSocket local) : modes « buzz puis saisie » et « maître du jeu »
 
 ## Prérequis
 
@@ -59,21 +60,26 @@ Ouvre `http://127.0.0.1:3000` (pas `localhost`).
 - **Nuxt 4** (front + serveur Nitro), **Tailwind CSS 4**, **TypeScript**.
 - **OAuth** : Authorization Code flow côté serveur via [nuxt-auth-utils](https://github.com/atinux/nuxt-auth-utils). Les tokens Spotify sont stockés dans un cookie de session chiffré, dans la partie `secure` accessible uniquement côté serveur. Le refresh est fait automatiquement avant expiration.
 - **Audio** : uniquement via le Web Playback SDK officiel. Aucun audio n'est téléchargé, stocké ou relayé. Aucune pochette ni fichier audio dans le dépôt : tout vient de l'API Spotify au moment du jeu.
+- **Réponses** : la partie vit en mémoire du serveur local. Le navigateur ne reçoit le titre et l'artiste qu'au moment de la révélation, et c'est le serveur qui déclenche la lecture sur le lecteur de l'hôte.
+- **Validation tolérante** : casse, accents, ponctuation, articles (« The », « Les »…), mentions « feat. », suffixes de version (« - Remastered ») et quelques fautes de frappe selon la longueur. Voir `shared/utils/answer.ts`.
 - **Playlists utilisables** : depuis février 2026, l'API ne donne le contenu que des playlists dont tu es propriétaire ou collaborateur. Les playlists suivies (éditoriales Spotify, playlists d'amis) s'affichent mais ne sont pas sélectionnables : copie leurs titres dans une playlist à toi.
 
 ## Structure
 
 ```
 app/
-  pages/          index (connexion), playlists
+  pages/          index (connexion), playlists, game/[id] (écran de jeu)
+  composables/    useSpotifyPlayer (Web Playback SDK)
   components/     AppHeader, AppFooter, PlaylistCard, VinylDisc
   middleware/     auth (redirige vers l'accueil si non connecté)
 server/
   routes/auth/    spotify.get.ts : flow OAuth Spotify
-  api/spotify/    playlists.get.ts : playlists de l'utilisateur
-  utils/          spotify.ts : scopes, refresh token, client API
+  api/spotify/    playlists, token (pour le Web Playback SDK)
+  api/games/      création de partie, manche, réponse, révélation, manche suivante
+  utils/          spotify.ts (client API, refresh), tracks.ts, games.ts (moteur de partie en mémoire)
   middleware/     loopback.ts : redirige localhost vers 127.0.0.1
-shared/types/     types partagés client / serveur
+shared/          types et utilitaires partagés (validation des réponses, réglages)
+test/            tests unitaires (pnpm test)
 design/           prototypes HTML des directions visuelles
 ```
 

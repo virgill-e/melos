@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{ label?: string }>()
+const props = defineProps<{ label?: string, spinning?: boolean }>()
 
 const GROOVE_START = 19
 const GROOVE_END = 48.5
@@ -8,18 +8,58 @@ const grooves = Array.from(
   { length: Math.floor((GROOVE_END - GROOVE_START) / GROOVE_STEP) },
   (_, i) => +(GROOVE_START + i * GROOVE_STEP).toFixed(2),
 )
+
+// 33 tours/min. Le disque accélère et freine progressivement, comme un vrai plateau.
+const REVOLUTION_MS = 1818
+const SPIN_UP_MS = 1600
+const SPIN_DOWN_MS = 800
+
+const gradientId = useId()
+const disc = ref<SVGSVGElement>()
+let spin: Animation | null = null
+let rampFrame = 0
+
+function rampTo(target: number, durationMs: number) {
+  if (!spin) return
+  cancelAnimationFrame(rampFrame)
+  const from = spin.playbackRate
+  const start = performance.now()
+  const step = (now: number) => {
+    const progress = Math.min(1, (now - start) / durationMs)
+    const eased = 1 - (1 - progress) ** 3
+    spin!.playbackRate = from + (target - from) * eased
+    if (progress < 1) rampFrame = requestAnimationFrame(step)
+  }
+  rampFrame = requestAnimationFrame(step)
+}
+
+onMounted(() => {
+  spin = disc.value!.animate(
+    [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }],
+    { duration: REVOLUTION_MS, iterations: Infinity },
+  )
+  spin.playbackRate = 0
+  if (props.spinning) rampTo(1, SPIN_UP_MS)
+})
+
+watch(() => props.spinning, spinning => rampTo(spinning ? 1 : 0, spinning ? SPIN_UP_MS : SPIN_DOWN_MS))
+
+onBeforeUnmount(() => {
+  cancelAnimationFrame(rampFrame)
+  spin?.cancel()
+})
 </script>
 
 <template>
   <div class="relative aspect-square">
-    <svg viewBox="0 0 100 100" class="block size-full" aria-hidden="true">
+    <svg ref="disc" viewBox="0 0 100 100" class="block size-full" aria-hidden="true">
       <defs>
-        <radialGradient id="vinyl-body" cx="50%" cy="50%" r="50%">
+        <radialGradient :id="gradientId" cx="50%" cy="50%" r="50%">
           <stop offset="0" stop-color="#151516" />
           <stop offset="1" stop-color="#0a0a0a" />
         </radialGradient>
       </defs>
-      <circle cx="50" cy="50" r="50" fill="url(#vinyl-body)" />
+      <circle cx="50" cy="50" r="50" :fill="`url(#${gradientId})`" />
       <g fill="none" stroke="#fff" stroke-opacity=".07" stroke-width=".12">
         <circle v-for="r in grooves" :key="r" cx="50" cy="50" :r="r" />
       </g>

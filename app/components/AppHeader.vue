@@ -8,7 +8,7 @@ async function logout() {
 </script>
 
 <template>
-  <header class="flex items-center justify-between px-8 py-6">
+  <header class="flex items-center justify-between px-8 py-6 md:px-16">
     <NuxtLink to="/" class="text-lg font-semibold tracking-tight">Melos</NuxtLink>
     <div v-if="user" class="flex items-center gap-3 text-sm">
       <img v-if="user.avatar" :src="user.avatar" alt="" class="size-7 rounded-full object-cover">

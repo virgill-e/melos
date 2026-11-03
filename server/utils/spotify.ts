@@ -57,10 +57,18 @@ export async function getSpotifyAccessToken(event: RequestEvent, { forceRefresh 
   return refreshAccessToken(event, tokens.refreshToken)
 }
 
-export async function spotifyFetch<T>(event: RequestEvent, path: string, options: { query?: Record<string, string | number> } = {}): Promise<T> {
+interface SpotifyFetchOptions {
+  method?: 'GET' | 'POST' | 'PUT'
+  query?: Record<string, string | number>
+  body?: Record<string, unknown>
+}
+
+export async function spotifyFetch<T>(event: RequestEvent, path: string, options: SpotifyFetchOptions = {}): Promise<T> {
   const call = (token: string) => $fetch<T>(path, {
     baseURL: API_BASE,
+    method: options.method ?? 'GET',
     query: options.query,
+    body: options.body,
     headers: { Authorization: `Bearer ${token}` },
   })
 
@@ -70,7 +78,8 @@ export async function spotifyFetch<T>(event: RequestEvent, path: string, options
   catch (error: any) {
     const status = error?.response?.status ?? error?.statusCode
     if (status === 401) return call(await getSpotifyAccessToken(event, { forceRefresh: true }))
-    if (status === 403) throw createError({ statusCode: 403, statusMessage: 'Compte non autorisé sur cette app Spotify (mode développement : ajoute-le dans le dashboard)' })
+    if (status === 403) throw createError({ statusCode: 403, statusMessage: 'Spotify a refusé la requête : compte non autorisé sur l\'app (User Management) ou sans Premium' })
+    if (status === 404 && path.startsWith('/me/player')) throw createError({ statusCode: 404, statusMessage: 'Lecteur Spotify introuvable, recharge la page' })
     if (status === 429) throw createError({ statusCode: 429, statusMessage: 'Quota Spotify atteint, réessaie dans quelques instants' })
     throw error
   }

@@ -16,6 +16,31 @@ const selected = computed(() => usable.value.find(playlist => playlist.id === se
 function toggle(id: string) {
   selectedId.value = selectedId.value === id ? null : id
 }
+
+const settings = useState<GameSettings>('game-settings', () => ({ ...DEFAULT_SETTINGS }))
+const creating = ref(false)
+const createError = ref<string | null>(null)
+const notEnoughTracks = computed(() => {
+  const count = selected.value?.trackCount
+  return count != null && count < settings.value.rounds
+})
+
+async function startGame() {
+  if (!selected.value || creating.value) return
+  creating.value = true
+  createError.value = null
+  try {
+    const game = await $fetch('/api/games', {
+      method: 'POST',
+      body: { playlistId: selected.value.id, ...settings.value },
+    })
+    await navigateTo(`/game/${game.id}`)
+  }
+  catch (e: any) {
+    createError.value = e?.data?.statusMessage ?? 'Impossible de préparer la partie.'
+    creating.value = false
+  }
+}
 </script>
 
 <template>
@@ -78,13 +103,31 @@ function toggle(id: string) {
       enter-active-class="transition duration-500 ease-apple"
       leave-active-class="transition duration-300 ease-apple"
     >
-      <div v-if="selected" class="fixed inset-x-0 bottom-0 border-t border-white/10 bg-black/70 px-8 py-4 backdrop-blur-xl md:px-16">
-        <div class="flex items-center gap-4">
-          <img v-if="selected.imageUrl" :src="selected.imageUrl" alt="" class="size-12 rounded object-cover">
-          <div class="min-w-0">
-            <p class="truncate font-medium">{{ selected.name }}</p>
-            <p class="text-sm text-white/45">Le réglage de la partie arrive à la prochaine étape.</p>
+      <div v-if="selected" class="fixed inset-x-0 bottom-0 border-t border-white/10 bg-black/75 px-8 py-4 backdrop-blur-xl md:px-16">
+        <div class="flex flex-wrap items-center gap-x-10 gap-y-4">
+          <div class="flex min-w-0 flex-1 items-center gap-4">
+            <img v-if="selected.imageUrl" :src="selected.imageUrl" alt="" class="size-12 rounded object-cover">
+            <div class="min-w-0">
+              <p class="truncate font-medium">{{ selected.name }}</p>
+              <p class="text-sm" :class="createError || notEnoughTracks ? 'text-[#ffb9a8]' : 'text-white/45'">
+                <template v-if="createError">{{ createError }}</template>
+                <template v-else-if="notEnoughTracks">Seulement {{ selected.trackCount }} titres : la partie sera plus courte.</template>
+                <template v-else>{{ selected.trackCount }} titres</template>
+              </p>
+            </div>
           </div>
+
+          <SegmentedControl v-model="settings.rounds" label="Manches" :options="ROUND_OPTIONS" />
+          <SegmentedControl v-model="settings.extractSeconds" label="Extrait" :options="EXTRACT_OPTIONS" suffix=" s" />
+
+          <button
+            type="button"
+            class="rounded-full bg-white px-6 py-3 text-[15px] font-semibold text-black transition hover:bg-white/85"
+            :aria-busy="creating"
+            @click="startGame"
+          >
+            {{ creating ? 'Préparation…' : 'Lancer la partie' }}
+          </button>
         </div>
       </div>
     </Transition>
