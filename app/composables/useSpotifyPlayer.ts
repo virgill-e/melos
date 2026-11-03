@@ -122,14 +122,20 @@ export function useSpotifyPlayer() {
     return fadeTo(PLAYER_VOLUME, 700)
   }
 
-  async function fadeOutAndPause() {
-    await fadeTo(0, 400)
+  async function fadeOutAndPause(durationMs = 400) {
+    await fadeTo(0, durationMs)
     await player?.pause()
     await player?.setVolume(PLAYER_VOLUME)
+  }
+
+  async function resumeWithFade() {
+    await player?.setVolume(0)
+    await player?.resume()
+    await fadeTo(PLAYER_VOLUME, 500)
   }
 
   onMounted(connect)
   onBeforeUnmount(() => player?.disconnect())
 
-  return { deviceId, error, activate, waitForPlayback, prepareFadeIn, fadeIn, fadeOutAndPause }
+  return { deviceId, error, activate, waitForPlayback, prepareFadeIn, fadeIn, fadeOutAndPause, resumeWithFade }
 }

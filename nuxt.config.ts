@@ -7,8 +7,11 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   vite: { plugins: [tailwindcss()] },
 
-  // Spotify n'accepte que des redirect URI en loopback explicite (127.0.0.1), pas "localhost".
-  devServer: { host: '127.0.0.1', port: 3000 },
+  // Écoute sur tout le réseau local pour que les téléphones rejoignent la partie.
+  // L'hôte, lui, ouvre 127.0.0.1 : Spotify n'accepte que cette redirect URI (pas "localhost").
+  devServer: { host: '0.0.0.0', port: 3000 },
+
+  nitro: { experimental: { websocket: true } },
 
   fonts: {
     families: [{ name: 'Inter', provider: 'google', weights: [400, 500, 600, 700] }],

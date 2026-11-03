@@ -10,6 +10,6 @@ export default defineEventHandler(async (event): Promise<AnswerResult> => {
     throw createError({ statusCode: 400, statusMessage: 'Réponse vide' })
   }
 
-  const { found, gained } = submitAnswer(game, body.text.slice(0, MAX_ANSWER_LENGTH))
+  const { found, gained } = submitSoloAnswer(game, body.text.slice(0, MAX_ANSWER_LENGTH))
   return { found, gained, game: toPublicGame(game) }
 })

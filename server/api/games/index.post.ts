@@ -5,6 +5,7 @@ interface CreateGameBody {
   playlistId?: unknown
   rounds?: unknown
   extractSeconds?: unknown
+  mode?: unknown
 }
 
 function isOption(options: readonly number[], value: unknown): value is number {
@@ -18,7 +19,8 @@ export default defineEventHandler(async (event) => {
   if (typeof body?.playlistId !== 'string' || !body.playlistId) {
     throw createError({ statusCode: 400, statusMessage: 'Playlist manquante' })
   }
-  if (!isOption(ROUND_OPTIONS, body.rounds) || !isOption(EXTRACT_OPTIONS, body.extractSeconds)) {
+  const mode = MODE_OPTIONS.find(option => option.value === body.mode)?.value
+  if (!mode || !isOption(ROUND_OPTIONS, body.rounds) || !isOption(EXTRACT_OPTIONS, body.extractSeconds)) {
     throw createError({ statusCode: 400, statusMessage: 'Réglages de partie invalides' })
   }
 
@@ -35,7 +37,7 @@ export default defineEventHandler(async (event) => {
   const game = createGame({
     hostUserId: user.id,
     playlistName: playlist.name,
-    settings: { rounds: body.rounds, extractSeconds: body.extractSeconds },
+    settings: { mode, rounds: body.rounds, extractSeconds: body.extractSeconds },
     tracks,
   })
   return toPublicGame(game)

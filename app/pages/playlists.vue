@@ -18,6 +18,8 @@ function toggle(id: string) {
 }
 
 const settings = useState<GameSettings>('game-settings', () => ({ ...DEFAULT_SETTINGS }))
+const roundOptions = ROUND_OPTIONS.map(value => ({ value, label: String(value) }))
+const extractOptions = EXTRACT_OPTIONS.map(value => ({ value, label: `${value} s` }))
 const creating = ref(false)
 const createError = ref<string | null>(null)
 const notEnoughTracks = computed(() => {
@@ -104,7 +106,7 @@ async function startGame() {
       leave-active-class="transition duration-300 ease-apple"
     >
       <div v-if="selected" class="fixed inset-x-0 bottom-0 border-t border-white/10 bg-black/75 px-8 py-4 backdrop-blur-xl md:px-16">
-        <div class="flex flex-wrap items-center gap-x-10 gap-y-4">
+        <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
           <div class="flex min-w-0 flex-1 items-center gap-4">
             <img v-if="selected.imageUrl" :src="selected.imageUrl" alt="" class="size-12 rounded object-cover">
             <div class="min-w-0">
@@ -117,8 +119,9 @@ async function startGame() {
             </div>
           </div>
 
-          <SegmentedControl v-model="settings.rounds" label="Manches" :options="ROUND_OPTIONS" />
-          <SegmentedControl v-model="settings.extractSeconds" label="Extrait" :options="EXTRACT_OPTIONS" suffix=" s" />
+          <SegmentedControl v-model="settings.mode" label="Mode" :options="MODE_OPTIONS" />
+          <SegmentedControl v-model="settings.rounds" label="Manches" :options="roundOptions" />
+          <SegmentedControl v-model="settings.extractSeconds" label="Extrait" :options="extractOptions" />
 
           <button
             type="button"

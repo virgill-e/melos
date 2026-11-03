@@ -14,13 +14,14 @@ Blind test de salon sur ta propre musique Spotify. Un appareil (ordinateur branc
 - [x] Lecture via le Web Playback SDK, extrait aléatoire entre 20 % et 70 % du morceau
 - [x] Partie solo sur l'écran principal : réponse tolérante, 1 point artiste + 1 point titre, révélation
 - [x] Écran de résultats
-- [ ] Téléphones des joueurs (QR code, WebSocket local) : modes « buzz puis saisie » et « maître du jeu »
+- [x] Téléphones des joueurs (QR code, WebSocket local) : modes « buzz puis saisie » et « maître du jeu »
 
 ## Prérequis
 
 - Node.js 22.22+ et [pnpm](https://pnpm.io)
 - Un compte **Spotify Premium** pour l'appareil qui diffuse (obligatoire pour le Web Playback SDK et pour posséder une app en mode développement)
-- Un navigateur desktop récent (Chrome, Edge ou Firefox). Le Web Playback SDK ne fonctionne pas sur mobile ; Safari n'est pas recommandé.
+- Pour l'écran qui diffuse : Chrome ou Edge sur ordinateur (Firefox avec la lecture DRM activée). Le Web Playback SDK exige Widevine : il ne fonctionne ni sur mobile, ni dans les navigateurs qui en sont dépourvus (Helium, ungoogled-chromium, Brave sans Widevine activé, navigateurs intégrés aux apps).
+- Pour les joueurs : n'importe quel téléphone sur le même Wi-Fi que l'ordinateur.
 
 ## 1. Créer ton app Spotify
 
@@ -53,7 +54,21 @@ pnpm install
 pnpm dev
 ```
 
-Ouvre `http://127.0.0.1:3000` (pas `localhost`).
+Ouvre `http://127.0.0.1:3000` (pas `localhost`) sur l'ordinateur qui diffuse.
+
+Le serveur écoute sur tout le réseau local (`0.0.0.0`) : les téléphones rejoignent la partie en scannant le QR code de l'écran d'attente, ou en allant sur `http://<ip-de-l-ordinateur>:3000/join` avec le code affiché. Au premier lancement, macOS peut demander d'autoriser les connexions entrantes pour Node : accepte, sinon les téléphones ne verront pas l'ordinateur.
+
+Pour lancer la version compilée : `pnpm build` puis `NITRO_HOST=0.0.0.0 node --env-file=.env .output/server/index.mjs`.
+
+## Modes de jeu
+
+| Mode | Déroulé |
+| --- | --- |
+| **Buzz puis saisie** | Le premier qui buzze a 15 s pour taper sa réponse sur son téléphone, validée automatiquement. |
+| **Maître du jeu** | Une personne ne joue pas : son téléphone affiche la réponse, elle valide les réponses orales de celui qui a buzzé. |
+| **Solo** | La réponse se tape sur l'écran principal, sans téléphone. |
+
+Dans tous les modes : 1 point pour l'artiste, 1 point pour le titre. Une mauvaise réponse ou une réponse partielle fait passer la main : la musique reprend et les autres joueurs peuvent buzzer pour ce qui reste à trouver. Un joueur ne buzze qu'une fois par manche.
 
 ## Fonctionnement et choix techniques
 
@@ -68,15 +83,16 @@ Ouvre `http://127.0.0.1:3000` (pas `localhost`).
 
 ```
 app/
-  pages/          index (connexion), playlists, game/[id] (écran de jeu)
-  composables/    useSpotifyPlayer (Web Playback SDK)
+  pages/          index (connexion), playlists, game/[id] (écran principal), join (téléphones)
+  composables/    useSpotifyPlayer (Web Playback SDK), useGameSocket (WebSocket), useCountdown
   components/     AppHeader, AppFooter, PlaylistCard, VinylDisc
   middleware/     auth (redirige vers l'accueil si non connecté)
 server/
   routes/auth/    spotify.get.ts : flow OAuth Spotify
   api/spotify/    playlists, token (pour le Web Playback SDK)
-  api/games/      création de partie, manche, réponse, révélation, manche suivante
-  utils/          spotify.ts (client API, refresh), tracks.ts, games.ts (moteur de partie en mémoire)
+  api/games/      actions de l'hôte : création, lancement, manche, révélation, manche suivante
+  routes/_ws.ts   WebSocket : inscription des téléphones, buzz, réponses, validation du maître du jeu
+  utils/          spotify.ts (client API, refresh), tracks.ts, games.ts (moteur de partie), realtime.ts (diffusion)
   middleware/     loopback.ts : redirige localhost vers 127.0.0.1
 shared/          types et utilitaires partagés (validation des réponses, réglages)
 test/            tests unitaires (pnpm test)
@@ -88,6 +104,9 @@ design/           prototypes HTML des directions visuelles
 - **`INVALID_CLIENT: Invalid redirect URI`** : la Redirect URI du dashboard et `NUXT_OAUTH_SPOTIFY_REDIRECT_URL` doivent être strictement identiques.
 - **Erreur 403 après connexion** : le compte n'est pas ajouté dans *User Management* de l'app, ou le propriétaire n'a plus Premium.
 - **Erreur 429** : quota du mode développement atteint, attends quelques minutes.
+- **« Widevine » absent** : change de navigateur pour l'écran qui diffuse (voir Prérequis).
+- **Les téléphones n'arrivent pas à se connecter** : vérifie qu'ils sont sur le même Wi-Fi (pas un réseau invité, qui isole souvent les appareils) et que macOS autorise les connexions entrantes pour Node.
+- **Partie introuvable** : les parties vivent en mémoire, un redémarrage du serveur les efface.
 
 ## Licence
 
