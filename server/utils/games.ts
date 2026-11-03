@@ -30,6 +30,7 @@ export interface Game {
   code: string
   version: number
   hostUserId: string
+  playlistId: string
   playlistName: string
   settings: GameSettings
   phase: GamePhase
@@ -55,6 +56,8 @@ const SOLO_PLAYER_ID = 'solo'
 
 const games = new Map<string, Game>()
 const gameIdsByCode = new Map<string, string>()
+/** Morceaux déjà révélés par playlist, pour ne pas les rejouer d'une partie à l'autre (en mémoire). */
+const playedByPlaylist = new Map<string, Set<string>>()
 const listeners = new Set<(game: Game) => void>()
 let eventSequence = 0
 
@@ -121,9 +124,29 @@ function findPlayer(game: Game, playerId: string): Player {
 
 const toPublicPlayer = ({ token: _token, ...player }: Player): PublicPlayer => player
 
+/**
+ * Tire les morceaux en privilégiant ceux pas encore joués sur cette playlist. Quand il n'en reste
+ * plus assez, l'historique repart à zéro et on complète avec les anciens.
+ */
+function pickTracks(playlistId: string, tracks: GameTrack[], count: number): GameTrack[] {
+  const played = playedByPlaylist.get(playlistId) ?? new Set<string>()
+  const fresh = shuffle(tracks.filter(track => !played.has(track.id)))
+  if (fresh.length >= count) return fresh.slice(0, count)
+  playedByPlaylist.delete(playlistId)
+  const replayed = shuffle(tracks.filter(track => played.has(track.id)))
+  return [...fresh, ...replayed].slice(0, count)
+}
+
+function markRevealed(game: Game, round: GameRound) {
+  round.revealed = true
+  let played = playedByPlaylist.get(game.playlistId)
+  if (!played) playedByPlaylist.set(game.playlistId, played = new Set())
+  played.add(round.id)
+}
+
 // --- Création et accès ---
 
-export function createGame(input: { hostUserId: string, playlistName: string, settings: GameSettings, tracks: GameTrack[] }): Game {
+export function createGame(input: { hostUserId: string, playlistId: string, playlistName: string, settings: GameSettings, tracks: GameTrack[] }): Game {
   purgeExpired()
   const extractMs = input.settings.extractSeconds * 1000
   const solo = input.settings.mode === 'solo'
@@ -132,11 +155,12 @@ export function createGame(input: { hostUserId: string, playlistName: string, se
     code: generateCode(),
     version: 0,
     hostUserId: input.hostUserId,
+    playlistId: input.playlistId,
     playlistName: input.playlistName,
     settings: input.settings,
     phase: solo ? 'ready' : 'lobby',
     roundIndex: 0,
-    rounds: shuffle(input.tracks).slice(0, input.settings.rounds).map(track => ({
+    rounds: pickTracks(input.playlistId, input.tracks, input.settings.rounds).map(track => ({
       ...track,
       startMs: pickStartMs(track.durationMs, extractMs),
       found: { title: false, artist: false },
@@ -222,6 +246,19 @@ export function joinGame(game: Game, input: { name: string, role: PlayerRole, to
   return player
 }
 
+/** L'hôte retire un joueur (téléphone d'un absent, doublon…), hors du moment où il a la main. */
+export function removePlayer(game: Game, playerId: string) {
+  const index = game.players.findIndex(player => player.id === playerId)
+  if (index === -1) fail(404, 'Joueur introuvable')
+  if (game.buzz?.playerId === playerId) fail(409, 'Ce joueur a la main, attends la fin de sa réponse')
+  game.players.splice(index, 1)
+  changed(game)
+}
+
+export function hasPlayer(game: Game, playerId: string): boolean {
+  return game.players.some(player => player.id === playerId)
+}
+
 export function setPlayerConnected(game: Game, playerId: string, connected: boolean) {
   const player = game.players.find(p => p.id === playerId)
   if (!player || player.connected === connected) return
@@ -272,7 +309,7 @@ export function revealRound(game: Game) {
   assertPhase(game, 'ready', 'playing', 'buzzed')
   clearBuzz(game)
   game.phase = 'reveal'
-  currentRound(game).revealed = true
+  markRevealed(game, currentRound(game))
   changed(game)
 }
 
@@ -350,7 +387,7 @@ function resolveBuzz(game: Game, playerId: string, match: FoundState, timedOut =
   const someoneCanStillBuzz = game.players.some(p => p.role === 'player' && p.connected && !round.locked.has(p.id))
   if (complete || !someoneCanStillBuzz) {
     game.phase = 'reveal'
-    round.revealed = true
+    markRevealed(game, round)
   }
   else {
     game.phase = 'playing'

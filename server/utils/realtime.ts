@@ -22,8 +22,14 @@ export function sendMessage(peer: PeerLike, message: ServerMessage) {
 }
 
 function sendState(subscriber: Subscriber, game: Game) {
-  if (subscriber.kind === 'host') sendMessage(subscriber.peer, { type: 'host-state', game: toPublicGame(game) })
-  else sendMessage(subscriber.peer, { type: 'player-state', view: toPlayerView(game, subscriber.playerId!) })
+  if (subscriber.kind === 'host') return sendMessage(subscriber.peer, { type: 'host-state', game: toPublicGame(game) })
+  // Joueur retiré par l'hôte : on prévient son téléphone et on le détache de la partie.
+  if (!hasPlayer(game, subscriber.playerId!)) {
+    sendMessage(subscriber.peer, { type: 'kicked' })
+    subscribers.delete(subscriber.peer.id)
+    return
+  }
+  sendMessage(subscriber.peer, { type: 'player-state', view: toPlayerView(game, subscriber.playerId!) })
 }
 
 export function subscribe(subscriber: Subscriber, game: Game) {

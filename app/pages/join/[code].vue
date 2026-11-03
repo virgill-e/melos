@@ -48,6 +48,12 @@ const socket = useGameSocket({
     else if (message.type === 'player-state') {
       if (!view.value || message.view.version >= view.value.version) view.value = message.view
     }
+    else if (message.type === 'kicked') {
+      localStorage.removeItem(STORAGE_KEY)
+      joined.value = false
+      view.value = null
+      error.value = 'L\'hôte t\'a retiré de la partie. Tu peux la rejoindre à nouveau.'
+    }
     else if (message.type === 'error') {
       joining.value = false
       error.value = message.message
@@ -209,7 +215,7 @@ const playerName = (id: string | null | undefined) => view.value?.players.find(p
         <template v-else>
           <p class="mt-2 text-sm text-white/45">Manche {{ view.roundIndex + 1 }} sur {{ view.roundCount }}</p>
           <div v-if="view.answer" class="mt-4 flex items-center gap-4 rounded-2xl bg-white/6 p-3">
-            <img v-if="view.answer.imageUrl" :src="view.answer.imageUrl" alt="" class="size-16 rounded-lg object-cover">
+            <img v-if="view.answer.imageUrl" :src="view.answer.imageUrl" alt="" class="size-16 rounded object-cover">
             <div class="min-w-0">
               <p class="truncate text-lg font-semibold">{{ view.answer.title }}</p>
               <p class="truncate text-white/60">{{ view.answer.artists.join(', ') }}</p>
@@ -318,7 +324,7 @@ const playerName = (id: string | null | undefined) => view.value?.players.find(p
         <div v-else-if="view.phase === 'reveal'" class="flex flex-1 flex-col justify-center gap-4 px-6">
           <p class="text-white/50">C'était</p>
           <div v-if="view.answer" class="flex items-center gap-4">
-            <img v-if="view.answer.imageUrl" :src="view.answer.imageUrl" alt="" class="size-20 rounded-lg object-cover">
+            <img v-if="view.answer.imageUrl" :src="view.answer.imageUrl" alt="" class="size-20 rounded object-cover">
             <div class="min-w-0">
               <p class="text-xl font-semibold leading-tight">{{ view.answer.title }}</p>
               <p class="truncate text-white/60">{{ view.answer.artists.join(', ') }}</p>
@@ -334,6 +340,8 @@ const playerName = (id: string | null | undefined) => view.value?.players.find(p
         </div>
       </section>
 
+      <!-- Attribution exigée dès qu'une pochette ou un titre Spotify est affiché. -->
+      <SpotifyLogo v-if="view.answer" variant="green" class="mx-auto" />
       <p v-if="error" role="alert" class="px-5 pb-4 text-center text-sm text-[#ffb9a8]">{{ error }}</p>
     </template>
   </main>

@@ -87,6 +87,15 @@ async function startGame() {
   }
 }
 
+async function removePlayer(playerId: string) {
+  try {
+    applyState(await $fetch<PublicGame>(`/api/games/${gameId}/players/${playerId}`, { method: 'DELETE' }))
+  }
+  catch (error) {
+    actionError.value = errorMessage(error, 'Impossible de retirer ce joueur.')
+  }
+}
+
 const answerInput = ref<HTMLInputElement>()
 const answerText = ref('')
 const feedback = ref<{ hit: boolean, text: string, key: number } | null>(null)
@@ -200,7 +209,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       {{ player.error.value ?? actionError }}
     </p>
 
-    <GameLobby v-if="game.phase === 'lobby'" :game="game" :starting="busy" @start="startGame" />
+    <GameLobby v-if="game.phase === 'lobby'" :game="game" :starting="busy" @start="startGame" @remove="removePlayer" />
 
     <template v-else>
       <div
@@ -214,6 +223,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         <span class="flex items-center gap-[2.4cqw]">
           <span v-if="!isSolo" class="text-white/40">Code <b class="font-semibold tracking-[0.15em] text-white/70">{{ game.code }}</b></span>
           <NuxtLink to="/playlists" class="text-white/50 transition hover:text-white">Quitter la partie</NuxtLink>
+          <SpotifyLogo width="7cqw" class="-my-[1cqw]" />
         </span>
       </header>
 
@@ -226,8 +236,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
             :class="isReveal ? '-translate-x-[11cqw] scale-[.92]' : ''"
           />
           <div
-            class="absolute left-[9cqw] top-1/2 aspect-square w-[min(40cqw,72dvh)] -translate-y-1/2 overflow-hidden rounded-[.7cqw] shadow-[0_2.5cqw_6cqw_rgb(0_0_0/0.45)] transition duration-1000 ease-apple"
-            :class="isReveal ? 'scale-100 opacity-100 delay-150' : 'pointer-events-none scale-[.94] opacity-0'"
+            class="absolute left-[9cqw] top-1/2 aspect-square w-[min(40cqw,72dvh)] -translate-y-1/2 overflow-hidden rounded-[8px] shadow-[0_2.5cqw_6cqw_rgb(0_0_0/0.45)] transition-opacity duration-1000 ease-apple"
+            :class="isReveal ? 'opacity-100 delay-150' : 'pointer-events-none opacity-0'"
           >
             <img v-if="shownAnswer?.imageUrl" :src="shownAnswer.imageUrl" :alt="`Pochette de ${shownAnswer.album}`" class="size-full object-cover">
           </div>

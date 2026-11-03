@@ -36,6 +36,7 @@ export default defineEventHandler(async (event) => {
 
   const game = createGame({
     hostUserId: user.id,
+    playlistId: playlist.id,
     playlistName: playlist.name,
     settings: { mode, rounds: body.rounds, extractSeconds: body.extractSeconds },
     tracks,

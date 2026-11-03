@@ -2,7 +2,7 @@
 import { renderSVG } from 'uqr'
 
 const props = defineProps<{ game: PublicGame, starting: boolean }>()
-defineEmits<{ start: [] }>()
+defineEmits<{ start: [], remove: [playerId: string] }>()
 
 const { data: network } = await useFetch('/api/network')
 
@@ -29,7 +29,10 @@ const missing = computed(() => {
   <div class="@container relative grid h-dvh grid-cols-[52%_48%] bg-surface">
     <header class="absolute inset-x-0 top-0 flex items-center justify-between px-[4cqw] py-[2.4cqw] text-[max(13px,1.05cqw)]">
       <span class="font-semibold tracking-tight">Melos <span class="ml-2 font-normal text-white/40">{{ game.playlistName }}</span></span>
-      <NuxtLink to="/playlists" class="text-white/50 transition hover:text-white">Quitter</NuxtLink>
+      <span class="flex items-center gap-[2.4cqw]">
+        <NuxtLink to="/playlists" class="text-white/50 transition hover:text-white">Quitter</NuxtLink>
+        <SpotifyLogo width="7cqw" class="-my-[1cqw]" />
+      </span>
     </header>
 
     <section class="flex flex-col items-center justify-center gap-[2.4cqw]">
@@ -65,16 +68,32 @@ const missing = computed(() => {
         <li
           v-for="player in players"
           :key="player.id"
-          class="flex items-center gap-[.8cqw] rounded-full bg-white/8 py-[.6cqw] pl-[.6cqw] pr-[1.4cqw] text-[1.4cqw] font-medium"
+          class="group flex items-center gap-[.8cqw] rounded-full bg-white/8 py-[.6cqw] pl-[.6cqw] pr-[.8cqw] text-[1.4cqw] font-medium"
           :class="player.connected ? '' : 'opacity-40'"
         >
           <PlayerAvatar :player="player" class="w-[2.4cqw] text-[.9cqw]" />
           {{ player.name }}
+          <button
+            type="button"
+            class="grid size-[2cqw] place-items-center rounded-full text-[1.3cqw] leading-none text-white/30 transition hover:bg-white/10 hover:text-white"
+            :aria-label="`Retirer ${player.name}`"
+            @click="$emit('remove', player.id)"
+          >
+            ×
+          </button>
         </li>
       </TransitionGroup>
 
       <p v-if="game.settings.mode === 'master'" class="mt-[1.6cqw] text-[1.3cqw] text-white/50">
         Maître du jeu : <span class="font-medium text-white">{{ master?.name ?? 'personne pour l\'instant' }}</span>
+        <button
+          v-if="master"
+          type="button"
+          class="ml-[.6cqw] text-white/35 underline-offset-2 transition hover:text-white hover:underline"
+          @click="$emit('remove', master.id)"
+        >
+          Retirer
+        </button>
       </p>
 
       <div class="mt-[3cqw] flex items-center gap-[1.6cqw]">

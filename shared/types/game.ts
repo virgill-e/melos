@@ -121,4 +121,5 @@ export type ServerMessage =
   | { type: 'host-state', game: PublicGame }
   | { type: 'player-state', view: PlayerView }
   | { type: 'joined', playerId: string, token: string }
+  | { type: 'kicked' }
   | { type: 'error', message: string, fatal?: boolean }

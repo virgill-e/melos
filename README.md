@@ -5,6 +5,8 @@ Blind test de salon sur ta propre musique Spotify. Un appareil (ordinateur branc
 > **Projet personnel, usage strictement privé.** Melos n'est ni affilié à Spotify, ni approuvé ou sponsorisé par Spotify. Spotify est une marque de Spotify AB.
 >
 > La [Developer Policy de Spotify](https://developer.spotify.com/policy/) interdit les applications de type jeu ou quiz utilisant la plateforme Spotify. Ce projet n'est donc **pas conforme** à cette politique : il est destiné à un usage privé entre proches, sans diffusion publique, sans usage commercial, et chacun l'utilise sous sa propre responsabilité avec sa propre app développeur.
+>
+> Écart assumé aux [règles de design Spotify](https://developer.spotify.com/documentation/design) : l'écran de révélation utilise la pochette floutée en fond, alors que les règles interdisent de flouter l'artwork. Le reste est appliqué : logo complet d'au moins 70 px partout où des contenus Spotify s'affichent, pochettes non recadrées ni recouvertes, coins de 4 à 8 px, liens « Écouter sur Spotify ».
 
 ## État d'avancement
 
@@ -77,6 +79,8 @@ Dans tous les modes : 1 point pour l'artiste, 1 point pour le titre. Une mauvais
 - **Audio** : uniquement via le Web Playback SDK officiel. Aucun audio n'est téléchargé, stocké ou relayé. Aucune pochette ni fichier audio dans le dépôt : tout vient de l'API Spotify au moment du jeu.
 - **Réponses** : la partie vit en mémoire du serveur local. Le navigateur ne reçoit le titre et l'artiste qu'au moment de la révélation, et c'est le serveur qui déclenche la lecture sur le lecteur de l'hôte.
 - **Validation tolérante** : casse, accents, ponctuation, articles (« The », « Les »…), mentions « feat. », suffixes de version (« - Remastered ») et quelques fautes de frappe selon la longueur. Voir `shared/utils/answer.ts`.
+- **Pas de répétition** : d'une partie à l'autre sur la même playlist, les morceaux déjà révélés sont écartés tant qu'il en reste assez (historique en mémoire, effacé au redémarrage du serveur).
+- **Logo Spotify** : fichiers officiels du [kit Spotify](https://developer.spotify.com/documentation/design) dans `public/brand/`. Spotify et son logo sont des marques de Spotify AB.
 - **Playlists utilisables** : depuis février 2026, l'API ne donne le contenu que des playlists dont tu es propriétaire ou collaborateur. Les playlists suivies (éditoriales Spotify, playlists d'amis) s'affichent mais ne sont pas sélectionnables : copie leurs titres dans une playlist à toi.
 
 ## Structure
