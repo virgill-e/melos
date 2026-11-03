@@ -1,0 +1,26 @@
+{
+  "name": "melos",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@nuxt/fonts": "^1.2.0",
+    "@tailwindcss/vite": "^4.3.4",
+    "nuxt": "^4.6.4",
+    "nuxt-auth-utils": "^0.6.0",
+    "tailwindcss": "^4.3.4",
+    "vue": "^3.5.44",
+    "vue-router": "^5.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.3.14"
+  }
+}
