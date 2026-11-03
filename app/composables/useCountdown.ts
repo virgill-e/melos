@@ -4,21 +4,31 @@ export function useCountdown(onEnd: () => void = () => {}) {
   let frame = 0
   let endsAt = 0
 
+  // `reset` peut être appelé pendant le rendu serveur, où requestAnimationFrame n'existe pas :
+  // on n'annule une frame que si on en a réellement programmé une (donc côté navigateur).
+  function cancelFrame() {
+    if (frame) cancelAnimationFrame(frame)
+    frame = 0
+  }
+
   function tick(now: number) {
     remaining.value = Math.max(0, (endsAt - now) / 1000)
-    if (remaining.value <= 0) return onEnd()
+    if (remaining.value <= 0) {
+      frame = 0
+      return onEnd()
+    }
     frame = requestAnimationFrame(tick)
   }
 
   function start(seconds: number) {
-    cancelAnimationFrame(frame)
+    cancelFrame()
     remaining.value = seconds
     endsAt = performance.now() + seconds * 1000
     frame = requestAnimationFrame(tick)
   }
 
   function pause() {
-    cancelAnimationFrame(frame)
+    cancelFrame()
   }
 
   function resume() {
@@ -26,7 +36,7 @@ export function useCountdown(onEnd: () => void = () => {}) {
   }
 
   function reset(seconds: number) {
-    cancelAnimationFrame(frame)
+    cancelFrame()
     remaining.value = seconds
   }
 

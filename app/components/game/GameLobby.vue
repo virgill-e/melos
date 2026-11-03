@@ -9,7 +9,7 @@ const { data: network } = await useFetch('/api/network')
 // Les téléphones joignent la machine par son IP locale, sur le même port que l'écran principal.
 const joinBase = computed(() => {
   const address = network.value?.addresses[0]
-  if (!address || !import.meta.client) return null
+  if (!address) return null
   return `http://${address}${location.port ? `:${location.port}` : ''}`
 })
 const joinUrl = computed(() => joinBase.value && `${joinBase.value}/join/${props.game.code}`)
@@ -33,13 +33,18 @@ const missing = computed(() => {
     </header>
 
     <section class="flex flex-col items-center justify-center gap-[2.4cqw]">
-      <div v-if="qrSvg" class="w-[min(26cqw,52dvh)] rounded-[1.6cqw] bg-white p-[2cqw]" v-html="qrSvg" />
-      <p v-else class="max-w-[30cqw] text-center text-[1.3cqw] text-white/50">
-        Aucun réseau local détecté. Connecte cet ordinateur au même Wi-Fi que les téléphones.
-      </p>
+      <!-- L'URL dépend du port vu par le navigateur : rendu côté client uniquement. -->
+      <ClientOnly>
+        <div v-if="qrSvg" class="w-[min(26cqw,52dvh)] rounded-[1.6cqw] bg-white p-[2cqw]" v-html="qrSvg" />
+        <p v-else class="max-w-[30cqw] text-center text-[1.3cqw] text-white/50">
+          Aucun réseau local détecté. Connecte cet ordinateur au même Wi-Fi que les téléphones.
+        </p>
+      </ClientOnly>
       <div class="text-center">
         <p class="text-[1.3cqw] text-white/50">Scanne pour rejoindre, ou va sur</p>
-        <p v-if="joinBase" class="mt-[.4cqw] text-[1.5cqw] font-medium tabular-nums">{{ joinBase.replace('http://', '') }}/join</p>
+        <ClientOnly>
+          <p v-if="joinBase" class="mt-[.4cqw] text-[1.5cqw] font-medium tabular-nums">{{ joinBase.replace('http://', '') }}/join</p>
+        </ClientOnly>
         <p class="mt-[1.2cqw] text-[1.1cqw] text-white/40">Code</p>
         <p class="text-[4cqw] font-bold leading-none tracking-[0.2em]">{{ game.code }}</p>
       </div>
