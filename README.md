@@ -8,6 +8,20 @@ Blind test de salon sur ta propre musique Spotify. Un appareil (ordinateur branc
 >
 > Écart assumé aux [règles de design Spotify](https://developer.spotify.com/documentation/design) : l'écran de révélation utilise la pochette floutée en fond, alors que les règles interdisent de flouter l'artwork. Le reste est appliqué : logo complet d'au moins 70 px partout où des contenus Spotify s'affichent, pochettes non recadrées ni recouvertes, coins de 4 à 8 px, liens « Écouter sur Spotify ».
 
+## Aperçu
+
+![Révélation : la pochette et le titre s'affichent sur l'écran principal, chaque téléphone voit ses points](melos-mockup-1-revelation.webp)
+
+**Révélation.** L'écran principal affiche la pochette, le titre et qui a trouvé quoi ; chaque joueur voit ses points sur son téléphone.
+
+![Buzz : le joueur qui a buzzé a 15 secondes pour taper sa réponse sur son téléphone](melos-mockup-2-buzz.webp)
+
+**Buzz.** La musique se coupe, le joueur qui a buzzé tape sa réponse sur son téléphone pendant que les scores restent affichés.
+
+![Écran d'attente : QR code pour rejoindre la partie et bouton Buzz plein écran sur le téléphone](melos-mockup-3-attente.webp)
+
+**Écran d'attente.** Les joueurs scannent le QR code pour rejoindre ; sur leur téléphone, tout l'écran devient le bouton Buzz.
+
 ## État d'avancement
 
 - [x] Connexion Spotify (OAuth côté serveur, refresh automatique, déconnexion)
